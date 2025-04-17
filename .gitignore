@@ -1,0 +1,13 @@
+.*
+!.cljfmt.edn
+!.codescene
+!.editorconfig
+!.envrc
+!.git-blame-ignore-revs
+!.github
+!.gitignore
+!.vscode
+gcroots
+node_modules
+result
+target

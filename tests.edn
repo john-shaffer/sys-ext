@@ -1,0 +1,5 @@
+#kaocha/v1
+{:kaocha.plugin.capture-output/capture-output? true
+ :plugins [:kaocha.plugin/print-invocations]
+ :tests [{:source-paths ["src"]
+          :test-paths ["test"]}]}
