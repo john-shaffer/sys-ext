@@ -22,7 +22,7 @@
    ::ds/stop (constantly nil)})
 
 (defn merge
-  "Returns a component that merges m when started.
+  "Returns a component that merges ms when started.
 
    Differs from [[clojure.core/merge]] by always returning a map
    and never nil. This makes it easy to distinguish between a started
