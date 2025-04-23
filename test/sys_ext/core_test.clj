@@ -44,7 +44,15 @@
                  :b {:x (se/call inc (se/call inc (ds/local-ref [:a])))}}}}
             se/expand-inline-defs
             ds/start ::ds/instances :service vals set))
-      "expands inline defs inside of other inline defs")))
+      "expands inline defs inside of other inline defs")
+    (is (= #{1 2 [2 3] {:x [[2 3]]}}
+          (-> {::ds/defs
+               {:service
+                {:a 1
+                 :b {:x [(se/call conj [(se/call inc (ds/local-ref [:a]))] 3)]}}}}
+            se/expand-inline-defs
+            ds/start ::ds/instances :service vals set))
+      "expands inline defs inside of sequences")))
 
 (deftest test-merge
   (testing "merge component"
