@@ -1,5 +1,7 @@
 ## Unreleased
 
+## v0.2.0 (2025-06-13)
+
 - Add a `first-cycle` function to find a cycle in the system.
   Systems are not supposed to contain cycles, but when they
   do it is useful to detect it and produce an informative
