@@ -11,6 +11,8 @@
    The behaviour when receiving a start signal more than once
    depends on the return value. If the last return value was nil,
    then f will be called again. Otherwise, f will not be called.
+   It's recommended to return an empty map rather than nil
+   so that start signals are idempotent.
 
    Always becomes nil when stopped."
   [f & args]
