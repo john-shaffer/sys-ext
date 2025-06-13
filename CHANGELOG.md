@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Update docstrings for `call` and `first-cycle`.
+
 ## v0.2.0 (2025-06-13)
 
 - Add a `first-cycle` function to find a cycle in the system.

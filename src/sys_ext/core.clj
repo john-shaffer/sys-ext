@@ -37,7 +37,10 @@
 
 (defn first-cycle
   "Returns the first cycle discovered in the system, or nil
-   if there are no cycles."
+   if there are no cycles.
+
+   The returned path can be passed directly to
+   [[sys-ext.graph/cycle-error]]."
   [system]
   (-> (ds/init-system system (::ds/last-signal system ::ds/status))
     ::ds/graphs
