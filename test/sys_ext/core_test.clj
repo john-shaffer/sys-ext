@@ -19,6 +19,31 @@
             ds/start ::ds/instances))
       "works with several args")))
 
+(deftest test-first-cycle
+  ; The cycle detection logic is best tested in the tests
+  ; for sys-ext.graph/first-cycle. These tests are mostly
+  ; to test the translation of the system to a graph.
+  (testing "first-cycle"
+    (is (empty? (se/first-cycle {})))
+    (is (empty? (se/first-cycle
+                  {::ds/defs
+                   {:service
+                    {:a 1
+                     :b (se/call inc (ds/local-ref [:a]))}}})))
+    (is (= [[:service :a] [:service :a]]
+          (se/first-cycle
+            {::ds/defs
+             {:service
+              {:a (ds/local-ref [:a])}}})))
+    (is (contains?
+          #{[[:service :a] [:service :b] [:service :a]]
+            [[:service :b] [:service :a] [:service :b]]}
+          (se/first-cycle
+            {::ds/defs
+             {:service
+              {:a (ds/local-ref [:b])
+               :b (ds/local-ref [:a])}}})))))
+
 (deftest test-expand-inline-defs
   (testing "expand-inline-defs"
     (is (= {:service {:a 1 :b 2}}

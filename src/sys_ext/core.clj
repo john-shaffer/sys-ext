@@ -2,7 +2,8 @@
   (:refer-clojure :exclude [merge])
   (:require
    [com.rpl.specter :as sp]
-   [donut.system :as ds]))
+   [donut.system :as ds]
+   [sys-ext.graph :as seg]))
 
 (defn call
   "Returns a component that calls `(apply f args)` when started.
@@ -31,6 +32,15 @@
    Always becomes nil when stopped."
   [& ms]
   (apply call clojure.core/merge {} ms))
+
+(defn first-cycle
+  "Returns the first cycle discovered in the system, or nil
+   if there are no cycles."
+  [system]
+  (-> (ds/init-system system (::ds/last-signal system ::ds/status))
+    ::ds/graphs
+    :topsort
+    seg/first-cycle))
 
 ;;; Inline component definitions
 
