@@ -51,13 +51,13 @@
       ; If we traversed from the roots but didn't visit all nodes, then
       ; the unvisited nodes must contain at least one cycle.
       (when (not= @checked all-nodes)
-        (first-cycle
+        (recur
           (apply lg/remove-nodes graph @checked))))))
 
 (defn cycle-error
   "Returns a [[clojure.lang.ExceptionInfo]] with a descriptive
    message.
-   
+
    The error message will contain at most [[max-paths]] paths."
   [path & {:keys [max-paths] :or {max-paths 10}}]
   (let [n (count path)
