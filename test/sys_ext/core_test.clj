@@ -2,7 +2,9 @@
   (:require
    [clojure.test :refer [deftest is testing]]
    [donut.system :as ds]
-   [sys-ext.core :as se]))
+   [sys-ext.core :as se])
+  (:import
+   (clojure.lang ExceptionInfo)))
 
 (deftest test-call
   (testing "call component"
@@ -93,3 +95,42 @@
           (-> {::ds/defs {:group {:a (se/merge {:A 1} {:A 2 :B 3} {:B 4})}}}
             ds/start ::ds/instances))
       "works with several args")))
+
+(deftest test-select-targets
+  (let [sysdef {::ds/defs
+                {:a {:A {:v 1}
+                     :target {:v (ds/local-ref [:A :v])}}
+                 :b {:B {:v 2}
+                     :target (ds/alias-component [:b :B])}
+                 :c {:C {:v 3}}}}]
+    (is (= #{[:a :target]}
+          (-> sysdef (se/select-targets [:a])
+            ::ds/selected-component-ids))
+      "Selecting one target works")
+    (is (= #{[:a :target] [:b :target]}
+          (-> sysdef (se/select-targets [:a :b])
+            ::ds/selected-component-ids))
+      "Selecting multiple targets works")
+    (is (= #{[:a :target] [:b :target]}
+          (-> sysdef (se/select-targets [:a :b :c] :throw-on-missing-target? false)
+            ::ds/selected-component-ids))
+      "Can ignore missing targets and select the rest")
+    (is (= #{}
+          (-> sysdef (se/select-targets [:c] :throw-on-missing-target? false)
+            ::ds/selected-component-ids))
+      "Can ignore missing targets and select nothing")
+    (is (= #{[:c :C]}
+          (-> sysdef (se/select-targets [:c] :target-component-name :C)
+            ::ds/selected-component-ids))
+      "Can provide a custom target component name")
+    (testing "Exceptions are thrown when a target is not found"
+      (is (thrown? ExceptionInfo
+            (se/select-targets sysdef [:c])))
+      (is (thrown? ExceptionInfo
+            (se/select-targets sysdef [:c] :target-component-name :does-not-exist)))
+      (is (thrown? ExceptionInfo
+            (se/select-targets sysdef [:does-not-exist])))
+      (is (thrown? ExceptionInfo
+            (se/select-targets sysdef [:a :b :c])))
+      (is (thrown? ExceptionInfo
+            (se/select-targets sysdef [:a] :target-component-name :does-not-exist))))))

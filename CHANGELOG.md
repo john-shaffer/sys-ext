@@ -1,6 +1,8 @@
 ## Unreleased
 
 - Update docstrings for `call` and `first-cycle`.
+- Add `select-targets` function for selecting component names
+  from a set of groups.
 
 ## v0.2.0 (2025-06-13)
 

@@ -133,3 +133,48 @@
       (recur system)
       ;; call init-system to merge base and rebuild ::ds/graphs
       (ds/init-system system (::ds/last-signal system ::ds/status)))))
+
+(defn select-targets
+  "Returns the system with each `target-component-name` in each
+   group in `group-names` selected.
+
+   Note that if nothing is selected, [[donut.system]] will
+   behave as if all components are selected. You can check
+   whether `(::ds/selected-component-ids system)` is empty
+   to determine if this is the case.
+
+   Example: `(select-targets system [:nrepl :http-server])`
+   would select the `[:nrepl :target]` and `[:http-server :target]`
+   components. Then calls to `[[donut.system/signal]]` will only
+   send signals to those components and their dependencies.
+   This can be useful to start a subset of components.
+
+   Options:
+
+   `target-component-name` Default: `:target`
+   The name of the component to select in each group.
+
+   `throw-on-missing-target?` Default: true
+   If true and a target component is not found in one of the groups,
+   a [[clojure.lang.ExceptionInfo]] is thrown. If false, a missing
+   target is simply ignored."
+  [{:as system ::ds/keys [defs]}
+   group-names
+   & {:keys [target-component-name throw-on-missing-target?]
+      :or {target-component-name :target
+           throw-on-missing-target? true}}]
+  (let [component-ids
+        #__ (keep
+              (fn [group-name]
+                (cond
+                  (-> defs (get group-name) (get target-component-name))
+                  [group-name target-component-name]
+
+                  throw-on-missing-target?
+                  (throw (ex-info (str "Target component " target-component-name " not found in group " group-name)
+                           {:group-name group-name
+                            :target-component-name target-component-name}))))
+              group-names)]
+    (if (seq component-ids)
+      (ds/select-components system component-ids)
+      (assoc system ::ds/selected-component-ids #{}))))
