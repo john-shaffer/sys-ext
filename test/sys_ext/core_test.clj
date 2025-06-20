@@ -134,3 +134,84 @@
             (se/select-targets sysdef [:a :b :c])))
       (is (thrown? ExceptionInfo
             (se/select-targets sysdef [:a] :target-component-name :does-not-exist))))))
+
+(deftest test-remove-dead-refs
+  (let [system {::ds/defs
+                {:group
+                 {:a {:v 1}
+                  :b {:v (se/weak-ref [:group :a :v])}
+                  :c {:v (se/weak-local-ref [:b :v])}
+                  :d {:v (se/weak-ref [:group :c :v])}}}}]
+    (testing "weak-refs are removed appropriately"
+      (is (= {:a {:v 1}
+              :b {:v nil}
+              :c {:v nil}
+              :d {:v (ds/ref [:group :c :v])}}
+            (-> system
+              (ds/select-components #{[:group :c]})
+              se/remove-dead-refs
+              ::ds/defs :group)))
+      (is (= {:a {:v 1}
+              :b {:v nil}
+              :c {:v (ds/local-ref [:b :v])}
+              :d {:v (ds/ref [:group :c :v])}}
+            (-> system
+              (ds/select-components #{[:group :b] [:group :c]})
+              se/remove-dead-refs
+              ::ds/defs :group)))
+      (is (= {:a {:v 1}
+              :b {:v (ds/ref [:group :a :v])}
+              :c {:v (ds/local-ref [:b :v])}
+              :d {:v (ds/ref [:group :c :v])}}
+            (-> system
+              (ds/select-components #{[:group :a] [:group :b] [:group :c]})
+              se/remove-dead-refs
+              ::ds/defs :group)
+            (-> system
+              (assoc ::ds/selected-component-ids #{})
+              se/remove-dead-refs
+              ::ds/defs :group))
+        "No selection is treated the same as full selection as in donut.system")))
+  (let [system {::ds/defs
+                {:group
+                 {:a {:v 1}
+                  :b {:v (se/weak-ref [:group :a :v])}
+                  :c {:v (ds/local-ref [:b :v])}
+                  :d {:v (se/weak-ref [:group :c :v])}}}}]
+    (testing "weak-refs on hard ref paths are removed appropriately"
+      (is (= {:a {:v 1}
+              :b {:v nil}
+              :c {:v (ds/local-ref [:b :v])}
+              :d {:v (ds/ref [:group :c :v])}}
+            (-> system
+              (ds/select-components #{[:group :c]})
+              se/remove-dead-refs
+              ::ds/defs :group)))
+      (is (= {:a {:v 1}
+              :b {:v nil}
+              :c {:v (ds/local-ref [:b :v])}
+              :d {:v (ds/ref [:group :c :v])}}
+            (-> system
+              (ds/select-components #{[:group :b] [:group :c]})
+              se/remove-dead-refs
+              ::ds/defs :group)))
+      (testing "system starts successfully"
+        (is (= {:b {:v nil}
+                :c {:v nil}}
+              (-> system
+                (ds/select-components #{[:group :c]})
+                se/remove-dead-refs
+                ds/start ::ds/instances :group)))
+        (is (= {:a {:v 1}
+                :b {:v 1}
+                :c {:v 1}
+                :d {:v 1}}
+              (-> system
+                (ds/select-components #{[:group :a] [:group :c] [:group :d]})
+                se/remove-dead-refs
+                ds/start ::ds/instances :group)
+              (-> system
+                (ds/select-components #{})
+                se/remove-dead-refs
+                ds/start ::ds/instances :group))
+          "No selection is treated the same as full selection as in donut.system")))))

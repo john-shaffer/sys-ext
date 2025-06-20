@@ -178,3 +178,93 @@
     (if (seq component-ids)
       (ds/select-components system component-ids)
       (assoc system ::ds/selected-component-ids #{}))))
+
+(def
+  ^{:doc "Indicates [[weak-ref]] status when present in
+          the metadata of a [[donut.system/ref]]."}
+  weak-ref-kw
+  :sys-ext/weak-ref?)
+
+(defn weak-ref?
+  "Returns true if [[ref]] is a [[weak-ref]] or [[weak-local-ref]]."
+  [ref]
+  (boolean
+    (and (ds/ref? ref)
+      (some-> ref meta (get weak-ref-kw)))))
+
+(defn weak-ref
+  "A [[donut.system/ref]] that can be replaced by nil if the
+   referenced component is not selected.
+   See [[transform-weak-refs]] for details.
+
+   [[ks-or-ref]] may be either an existing ref or a vector of keys
+   to pass to [[donut.system/ref]]."
+  [ks-or-ref]
+  (with-meta
+    (if (ds/ref? ks-or-ref)
+      ks-or-ref
+      (ds/ref ks-or-ref))
+    {weak-ref-kw true}))
+
+(defn weak-local-ref
+  "A [[donut.system/local-ref]] that can be replaced by nil if the
+   referenced component is not selected.
+   See [[transform-weak-refs]] for details.
+
+   [[ks-or-ref]] may be either an existing ref or a vector of keys
+   to pass to [[donut.system/local-ref]]. Both local and
+   non-local refs are accepted."
+  [ks-or-ref]
+  (weak-ref
+    (if (ds/ref? ks-or-ref)
+      ks-or-ref
+      (ds/local-ref ks-or-ref))))
+
+(defn remove-dead-refs
+  "Removes [[weak-ref]]s and [[weak-local-ref]]s if the
+   components they reference are not needed by the system's
+   selected component ids. Removed refs are replaced with nil.
+   See [[donut.system/select-components]].
+
+   This is intended to be used after calling
+   [[donut.system/select-components]] or [[select-targets]].
+
+   This is useful in the case that one component has a side
+   effect that a second component wants to wait for, but the
+   second component can start without the first component.
+   For example, you could have one component that updates
+   a database schema and another component that
+   retrieves some data from the database.
+   When the schema needs to be updated, the first component
+   can be selected by [[donut.system/select-components]] and
+   the second component will wait for it to complete. But when
+   the schema does not need to be updated and the first
+   component is not selected, the second component can still
+   start up without it."
+  [{:as system ::ds/keys [defs]}]
+  (let [without-weak-refs (assoc system ::ds/defs
+                            (sp/transform
+                              (sp/walker weak-ref?)
+                              (constantly nil)
+                              defs))
+        {::ds/keys [graphs]}
+        ;; call init-system to merge base and rebuild ::ds/graphs
+        (ds/init-system without-weak-refs (::ds/last-signal system ::ds/status))
+        {:keys [nodeset]} (:topsort graphs)]
+    (->>
+      (for [group-name (keys defs)
+            :let [components (get defs group-name)]]
+        [group-name
+         (sp/transform
+           (sp/walker weak-ref?)
+           (fn [ref]
+             (let [[ref-type ref-path] ref
+                   [component-group component-name]
+                   #__ (if (= ::ds/local-ref ref-type)
+                         [group-name (first ref-path)]
+                         ref-path)]
+               (when (contains? nodeset [component-group component-name])
+                 ref)))
+           components)])
+      (into {})
+      (assoc system ::ds/defs))))
