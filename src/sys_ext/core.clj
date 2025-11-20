@@ -195,7 +195,7 @@
 (defn weak-ref
   "A [[donut.system/ref]] that can be replaced by nil if the
    referenced component is not selected.
-   See [[transform-weak-refs]] for details.
+   See [[remove-dead-refs]] for details.
 
    [[ks-or-ref]] may be either an existing ref or a vector of keys
    to pass to [[donut.system/ref]]."
@@ -209,7 +209,7 @@
 (defn weak-local-ref
   "A [[donut.system/local-ref]] that can be replaced by nil if the
    referenced component is not selected.
-   See [[transform-weak-refs]] for details.
+   See [[remove-dead-refs]] for details.
 
    [[ks-or-ref]] may be either an existing ref or a vector of keys
    to pass to [[donut.system/local-ref]]. Both local and

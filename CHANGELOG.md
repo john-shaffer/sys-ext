@@ -1,5 +1,10 @@
 ## Unreleased
 
+- Fix references to `transform-weak-refs` in docstrings,
+  a early draft function that was never committed.
+  These have been changed to refer to `remove-dead-refs`.
+  See [https://github.com/john-shaffer/sys-ext/issues/1](#1).
+
 ## v0.3.0 (2025-06-20)
 
 - Update docstrings for `call` and `first-cycle`.
