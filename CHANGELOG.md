@@ -1,5 +1,7 @@
 ## Unreleased
 
+## 0.3.1 (2025-11-20)
+
 - Fix references to `transform-weak-refs` in docstrings,
   a early draft function that was never committed.
   These have been changed to refer to `remove-dead-refs`.
